@@ -9,7 +9,7 @@ DHT dht(DHTPIN, DHTTYPE);  // Creación del objeto DHT con el pin y tipo definid
 
 void setup() {
   Serial.begin(9600);      // Inicializa la comunicación serie a 9600 baudios
-  setTime(2, 0, 0, 12, 9, 2025); // Fija la hora inicial: hh, mm, ss, día, mes, año
+  setTime(10, 0, 0, 5, 10, 2025); // Fija la hora inicial: hh, mm, ss, día, mes, año
   dht.begin();             // Inicializa el sensor DHT
 }
 
