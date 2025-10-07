@@ -5,7 +5,16 @@
 ![Node-RED](https://img.shields.io/badge/Node--RED-Flow-red)
 ![ESP32](https://img.shields.io/badge/ESP32-Enabled-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
-
+---
+## 📑 Índice
+- [Descripción general](#🧠-descripción-general)
+- [Flujo del sistema](#⚙️-flujo-del-sistema)
+- [Conexión física (hardware)](#📡-conexión-física-hardware)
+- [Estructura de datos enviada](#🧩-estructura-de-datos-enviada)
+- [Integración con AWS](#🔗-integración-con-aws)
+- [Node-RED como puente MQTT](#🔁-node-red-como-puente-mqtt)
+- [Tecnologías usadas](#🚀-tecnologías-usadas)
+- [Autor](#👤-autor)
 ---
 ## 🧠 Descripción general
 
@@ -17,7 +26,11 @@ Los datos se almacenan automáticamente en **DynamoDB** mediante una **función 
 ## ⚙️ Flujo del sistema
 
 El flujo general del sistema es el siguiente:
- El **ESP32** lee los valores de temperatura y humedad del **DHT22**.  
+
+![Proceso](https://github.com/Jhairo18/AWS-DynamoDB-DHT22/blob/master/img/proceso.png)
+
+En donde
+- El **ESP32** lee los valores de temperatura y humedad del **DHT22**.  
 - **Node-RED** actúa como un **puente MQTT**, publicando los datos en el tópico `sala/temhum` hacia **AWS IoT Core**.  
 - **AWS IoT Core** activa una **regla IoT** que envía los mensajes a una **función Lambda**.  
 - **Lambda** escribe los datos en una tabla **DynamoDB**, donde pueden ser consultados desde la consola de AWS.
@@ -36,13 +49,16 @@ El flujo general del sistema es el siguiente:
 ![Esqumeatico](https://github.com/Jhairo18/AWS-DynamoDB-DHT22/blob/master/esquematico.png)
 ---
 ## 🧩 Estructura de datos enviada
-Los datos serán enviados en formato json, por el puerto serial en codigo arduino, luego por node-red habra una funcion que haga que lo convierta en json y este se envie por el nodo de mqtt out, que sera definido mediante el topico de sala/temhum
+Los datos son enviados en formato JSON desde el ESP32. Node-RED los procesa mediante una función que convierte el string JSON en objeto y los publica vía MQTT en el tópico sala/temhum.
 
+Ejemplo de payload enviado:
+```
 {
   "temperatura": 24.6,
   "humedad": 53.2,
   "tiempo": "05/10/2025, 10:24:46"
 }
+```
 ## Integración AWS
 - Tópico MQTT: sala/temhum
 - Regla IoT Core: Activa una función Lambda
@@ -59,6 +75,25 @@ temperatura	humedad	tiempo
 Node-RED se utiliza para facilitar la publicación MQTT entre el microcontrolador y AWS IoT Core.
 El flujo se compone principalmente de:
 📸 Esquema del flujo general:
+![node-red](https://github.com/Jhairo18/AWS-DynamoDB-DHT22/blob/master/img/node-red.png)
+En donde el flujo comienza con un nodo sensor (Serial In) que recibe datos desde un ESP32 en formato JSON como string, conteniendo información de tiempo, temperatura y humedad.
+
+Luego, un nodo Function 2 procesa estos datos, convirtiendo el JSON en objeto, extrayendo los valores y transformándolos a los tipos correctos para generar un payload limpio. Finalmente, el nodo MQTT out (sala/temhum) publica este payload en un topic MQTT, permitiendo que otros dispositivos o servicios suscritos reciban la información en tiempo real.
+El codigo del la Function 2 es el siguiente:
+```
+let data = JSON.parse(msg.payload);
+let tiempo = data.tiempo;
+let t = data.temperature;
+let h = data.humidity;
+
+msg.payload = {
+    tiempo: String(tiempo),
+    temperatura: Number(t),
+    humedad: Number(h)
+};
+return msg;
+
+```
 ## 🚀 Tecnologías usadas
 - ESP32 
 - Sensor DHT22
